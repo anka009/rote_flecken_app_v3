@@ -106,9 +106,9 @@ if canvas_result and canvas_result.json_data:
 
     st.success(f"🤝 {len(flecken_von_mensch)} manuell gezeichnete Flecken übernommen!")
 
-            # 🔢 Summierung
-            st.session_state["total_flecken"] += fleckenzahl
-            st.session_state["total_pixel_area"] += fläche_pixel
+    # 🔢 Summierung
+    st.session_state["total_flecken"] += fleckenzahl
+    st.session_state["total_pixel_area"] += fläche_pixel
 import pandas as pd
 from streamlit_drawable_canvas import st_canvas
 if uploaded_files and len(uploaded_files) > 0:
