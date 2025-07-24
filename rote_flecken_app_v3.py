@@ -93,6 +93,9 @@ if uploaded_files and len(uploaded_files) > 0:
         drawing_mode="polygon",  # Alternativ: "freedraw", "circle", "rect", "line"
         key="flecken_canvas",
     )
+     if canvas_result.json_data is not None:
+        st.info("✅ Gezeichnete Flecken-Daten empfangen")
+        st.write(canvas_result.json_data)
 else:
     st.warning("⚠️ Bitte lade zuerst ein Bild hoch, damit du darauf zeichnen kannst.")
 if canvas_result.json_data is not None:
