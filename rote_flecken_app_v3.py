@@ -2,7 +2,7 @@ import streamlit as st
 import cv2
 import numpy as np
 import pandas as pd
-from PIL import Image, ImageSequence, ImageDraw
+from PIL import Image, ImageSequence
 from streamlit_drawable_canvas import st_canvas
 
 # 🧠 Session-State Initialisierung
@@ -39,8 +39,9 @@ if uploaded_files:
 
         for j, frame in enumerate(frames):
             st.subheader(f"📄 Seite {j + 1} von Datei: {uploaded_file.name}")
+
             image_np = np.array(frame)
-            image_pil = Image.fromarray(image_np)
+            image_pil = Image.fromarray(image_np)  # ✅ Frame als PIL.Image für Canvas
 
             st.image(image_pil, caption="📷 Vorschau", use_column_width=True)
 
@@ -48,7 +49,7 @@ if uploaded_files:
                 fill_color="rgba(255, 0, 0, 0.3)",
                 stroke_width=2,
                 stroke_color="#ff0000",
-                background_image=image_pil,
+                background_image=image_pil,  # ✅ Korrekte Canvas-Hintergrundquelle
                 height=image_pil.height if image_pil.height < 600 else 600,
                 width=image_pil.width if image_pil.width < 800 else 800,
                 drawing_mode="polygon",
@@ -69,9 +70,7 @@ if uploaded_files:
                     fläche_pixel_auto += area
 
             fläche_mm2_auto = fläche_pixel_auto / (pixels_per_mm ** 2)
-            output = image_np.copy()
-            cv2.drawContours(output, contours, -1, (255, 0, 0), 2)
-            st.image(output, caption=f"🔬 Automatische Analyse", use_column_width=True)
+            st.image(cv2.drawContours(image_np.copy(), contours, -1, (255, 0, 0), 2), caption="🔬 Automatische Analyse", use_column_width=True)
 
             st.session_state["analyse_ergebnisse"].append({
                 "Datei": uploaded_file.name,
@@ -109,7 +108,7 @@ if uploaded_files:
                 st.session_state["total_pixel_area"] += sum(
                     round(f["Fläche (mm²)"] * (pixels_per_mm ** 2), 2) for f in gezeichnete_flecken
                 )
-                st.success(f"🖌️ {len(gezeichnete_flecken)} Flecken gezeichnet & gespeichert!")
+                st.success(f"🖌️ {len(gezeichnete_flecken)} manuelle Flecken übernommen!")
 
 # 📊 Ergebnis-Tabelle
 st.subheader("📊 Gesamt-Ergebnisse")
@@ -117,6 +116,6 @@ if st.session_state["analyse_ergebnisse"]:
     df = pd.DataFrame(st.session_state["analyse_ergebnisse"])
     st.dataframe(df)
     gesamt_mm2 = round(st.session_state["total_pixel_area"] / (pixels_per_mm ** 2), 2)
-    st.info(f"🔢 Gesamtflecken: {st.session_state['total_flecken']} • Gesamtfläche: {gesamt_mm2} mm²")
+    st.info(f"🔢 Gesamtflecken: {st.session_state['total_flecken']} • Fläche: {gesamt_mm2} mm²")
 else:
-    st.warning("🚫 Keine Ergebnisse vorhanden – bitte Bild hochladen und analysieren!")
+    st.warning("🚫 Noch keine Ergebnisse vorhanden — bitte Bild analysieren!")
