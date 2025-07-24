@@ -74,6 +74,37 @@ if uploaded_files:
             output = image_np.copy()
             cv2.drawContours(output, filtered, -1, (0, 255, 0), 2)
             st.image(output, caption="Markierte Flecken", channels="RGB")
+# 🧪 Manuelle Flecken aus Canvas übernehmen
+min_canvas_area = st.sidebar.slider("🖍️ Mindestfläche für gezeichnete Flecken", 10, 1000, 50, 10)
+
+if canvas_result and canvas_result.json_data:
+    flecken_von_mensch = []
+    for obj in canvas_result.json_data["objects"]:
+        if obj["type"] == "polygon":
+            points = obj["path"]
+            if points and len(points) >= 3:
+                x = [p[0] for p in points]
+                y = [p[1] for p in points]
+                fläche = 0.5 * abs(sum(x[i] * y[i+1] - x[i+1] * y[i] for i in range(-1, len(x)-1)))
+                if fläche >= min_canvas_area:
+                    flecken_von_mensch.append({
+                        "Quelle": "Manuell",
+                        "Datei": uploaded_file.name,
+                        "Seite": 0,  # Optional anpassen
+                        "Fleckenzahl": 1,
+                        "Fläche (mm²)": round(fläche / (pixels_per_mm ** 2), 2)
+                    })
+
+    # In Session-State speichern
+    st.session_state["analyse_ergebnisse"].extend(flecken_von_mensch)
+
+    # Zur Gesamtsumme hinzufügen
+    st.session_state["total_flecken"] += len(flecken_von_mensch)
+    st.session_state["total_pixel_area"] += sum(
+        round(item["Fläche (mm²)"] * (pixels_per_mm ** 2), 2) for item in flecken_von_mensch
+    )
+
+    st.success(f"🤝 {len(flecken_von_mensch)} manuell gezeichnete Flecken übernommen!")
 
             # 🔢 Summierung
             st.session_state["total_flecken"] += fleckenzahl
