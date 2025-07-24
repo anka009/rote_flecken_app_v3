@@ -38,6 +38,7 @@ if uploaded_files:
         frames = [frame.copy().convert("RGB") for frame in ImageSequence.Iterator(image)]
 
         for j, frame in enumerate(frames):
+            image_pil = Image.open(uploaded_file).convert("RGB")  # ✅ Jetzt ist uploaded_file definiert! 
             st.subheader(f"📄 Seite {j + 1} von Datei: {uploaded_file.name}")
             image_np = np.array(frame)
             image_pil = Image.fromarray(image_np)
