@@ -79,6 +79,24 @@ if uploaded_files:
             st.session_state["total_flecken"] += fleckenzahl
             st.session_state["total_pixel_area"] += fläche_pixel
 import pandas as pd
+from streamlit_drawable_canvas import st_canvas
+
+st.subheader("🖌️ Manuelle Fleckenzeichnung")
+
+canvas_result = st_canvas(
+    fill_color="rgba(255, 0, 0, 0.3)",  # Rote transparente Füllung
+    stroke_width=2,
+    stroke_color="#ff0000",
+    background_image=Image.open(uploaded_files[0]),  # z. B. erstes hochgeladenes Bild
+    height=300,
+    width=500,
+    drawing_mode="polygon",  # Alternativ: "freedraw", "circle", "rect", "line"
+    key="flecken_canvas",
+)
+
+if canvas_result.json_data is not None:
+    st.info("✅ Gezeichnete Flecken-Daten empfangen")
+    st.write(canvas_result.json_data)  # Für Debugging oder Weiterverarbeitung
 
 # In Tabelle umwandeln
 df = pd.DataFrame(st.session_state["analyse_ergebnisse"])
