@@ -44,6 +44,56 @@ if uploaded_files:
         except Exception as e:
             st.error(f"❌ Fehler beim Laden: {e}")
             continue
+from streamlit_drawable_canvas import st_canvas
+from PIL import Image
+
+# 🖼️ Vorschau & Zeichenfläche für manuelle Flecken
+image_pil = Image.open(uploaded_file).convert("RGB")
+st.image(image_pil, caption="📷 Vorschau", use_column_width=True)
+
+st.subheader("🖌️ Manuelle Fleckenzeichnung")
+canvas_result = st_canvas(
+    fill_color="rgba(255, 0, 0, 0.3)",  # Transparente rote Füllung
+    stroke_width=2,
+    stroke_color="#ff0000",
+    background_color="#ffffff",         # Weißer Hintergrund (optional anpassbar)
+    height=300,
+    width=500,
+    drawing_mode="polygon",
+    key=f"canvas_{uploaded_file.name}"
+)
+
+# 🧮 Flächenberechnung manuell gezeichneter Flecken
+min_canvas_area = st.sidebar.slider("🖍️ Mindestfläche für manuelle Flecken (px²)", 10, 1000, 50, 10)
+pixels_per_mm = 10  # An deine Skalierung anpassen
+
+gezeichnete_flecken = []
+if canvas_result and canvas_result.json_data:
+    for obj in canvas_result.json_data["objects"]:
+        if obj["type"] == "polygon":
+            points = obj["path"]
+            if points and len(points) >= 3:
+                x = [p[0] for p in points]
+                y = [p[1] for p in points]
+                area_px = 0.5 * abs(sum(x[i] * y[i+1] - x[i+1] * y[i] for i in range(-1, len(x)-1)))
+                if area_px >= min_canvas_area:
+                    area_mm2 = round(area_px / (pixels_per_mm ** 2), 2)
+                    gezeichnete_flecken.append({
+                        "Datei": uploaded_file.name,
+                        "Seite": 0,  # Seite 0 für manuelle Zeichnung vor Frame-Analyse
+                        "Fleckenzahl": 1,
+                        "Fläche (mm²)": area_mm2,
+                        "Quelle": "Manuell"
+                    })
+
+# ✅ In Session-State eintragen
+if gezeichnete_flecken:
+    st.session_state["analyse_ergebnisse"].extend(gezeichnete_flecken)
+    st.session_state["total_flecken"] += len(gezeichnete_flecken)
+    st.session_state["total_pixel_area"] += sum(
+        round(f["Fläche (mm²)"] * (pixels_per_mm ** 2), 2) for f in gezeichnete_flecken
+    )
+    st.success(f"🤝 {len(gezeichnete_flecken)} manuelle Flecken hinzugefügt!")
 
         for j, frame in enumerate(frames):
             if len(frames) > 1:
@@ -74,12 +124,7 @@ if uploaded_files:
             output = image_np.copy()
             cv2.drawContours(output, filtered, -1, (0, 255, 0), 2)
             st.image(output, caption="Markierte Flecken", channels="RGB")
-# 🧪 Manuelle Flecken aus Canvas übernehmen
-min_canvas_area = st.sidebar.slider("🖍️ Mindestfläche für gezeichnete Flecken", 10, 1000, 50, 10)
 
-if canvas_result and canvas_result.json_data:
-    flecken_von_mensch = []
-    for obj in canvas_result.json_data["objects"]:
         if obj["type"] == "polygon":
             points = obj["path"]
             if points and len(points) >= 3:
