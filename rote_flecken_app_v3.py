@@ -99,17 +99,17 @@ if gezeichnete_flecken:
         if len(frames) > 1:
                 st.subheader(f"📄 Seite {j + 1}")
 
-            image_np = np.array(frame)
-            hsv = cv2.cvtColor(image_np, cv2.COLOR_RGB2HSV)
-            lower = np.array([h_min, s_min, v_min])
-            upper = np.array([h_max, 255, 255])
-            mask = cv2.inRange(hsv, lower, upper)
+        image_np = np.array(frame)
+        hsv = cv2.cvtColor(image_np, cv2.COLOR_RGB2HSV)
+        lower = np.array([h_min, s_min, v_min])
+        upper = np.array([h_max, 255, 255])
+        mask = cv2.inRange(hsv, lower, upper)
 
-            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            filtered = [cnt for cnt in contours if cv2.contourArea(cnt) > min_area]
-            fleckenzahl = len(filtered)
-            fläche_pixel = sum(cv2.contourArea(cnt) for cnt in filtered)
-            fläche_mm2 = fläche_pixel / (pixels_per_mm ** 2)
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        filtered = [cnt for cnt in contours if cv2.contourArea(cnt) > min_area]
+        fleckenzahl = len(filtered)
+        fläche_pixel = sum(cv2.contourArea(cnt) for cnt in filtered)
+        fläche_mm2 = fläche_pixel / (pixels_per_mm ** 2)
 
             # 📈 Speicherung ins Session-State
             st.session_state["analyse_ergebnisse"].append({
