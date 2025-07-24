@@ -43,7 +43,6 @@ if uploaded_files:
             image_np = np.array(frame)
             image_pil = Image.fromarray(image_np)
 
-image_pil = Image.open(uploaded_file).convert("RGB")
 st.image(image_pil, caption="📷 Vorschau", use_column_width=True)
 
 # Zeichenfläche direkt über dem Originalbild
