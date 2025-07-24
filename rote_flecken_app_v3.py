@@ -2,7 +2,7 @@ import streamlit as st
 import cv2
 import numpy as np
 import pandas as pd
-from PIL import Image, ImageSequence
+from PIL import Image, ImageSequence, ImageDraw
 from streamlit_drawable_canvas import st_canvas
 
 # 🧠 Session-State Initialisierung
@@ -42,8 +42,8 @@ if uploaded_files:
             image_np = np.array(frame)
             image_pil = Image.fromarray(image_np)
 
-            # 🎨 Zeichenfläche direkt auf dem Bild
             st.image(image_pil, caption="📷 Vorschau", use_column_width=True)
+
             canvas_result = st_canvas(
                 fill_color="rgba(255, 0, 0, 0.3)",
                 stroke_width=2,
