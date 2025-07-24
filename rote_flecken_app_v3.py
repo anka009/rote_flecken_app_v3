@@ -1,215 +1,125 @@
 import streamlit as st
-from PIL import Image, ImageSequence
-import numpy as np
 import cv2
-import pandas as pd
-import io
+import numpy as np
+from PIL import Image, ImageSequence
+from streamlit_drawable_canvas import st_canvas
 
 # 🧠 Session-State Initialisierung
 if "analyse_ergebnisse" not in st.session_state:
     st.session_state["analyse_ergebnisse"] = []
-
 if "total_flecken" not in st.session_state:
     st.session_state["total_flecken"] = 0
-
 if "total_pixel_area" not in st.session_state:
     st.session_state["total_pixel_area"] = 0
 
-# 🧹 Reset-Button
-if st.sidebar.button("🧹 Neues Experiment starten"):
+# 🔄 Reset-Button
+if st.sidebar.button("🧪 Neues Experiment starten"):
     st.session_state["analyse_ergebnisse"] = []
     st.session_state["total_flecken"] = 0
     st.session_state["total_pixel_area"] = 0
     st.rerun()
 
-# 🎨 Farbempfindlichkeit via Slider
+# 🎛️ Farbfilter & Schwellenwerte
 h_min = st.sidebar.slider("Hue min", 0, 180, 0)
 h_max = st.sidebar.slider("Hue max", 0, 180, 30)
 s_min = st.sidebar.slider("Sättigung min", 0, 255, 70)
 v_min = st.sidebar.slider("Helligkeit min", 0, 255, 50)
-min_area = st.sidebar.slider("🟢 Minimale Fleckfläche (Pixel)", min_value=10, max_value=1000, value=50, step=10)
+min_area = st.sidebar.slider("🟢 Minimale Fleckfläche (Pixel)", 10, 1000, 50, 10)
+min_canvas_area = st.sidebar.slider("🖍️ Mindestfläche für manuelle Flecken (px²)", 10, 1000, 50, 10)
+pixels_per_mm = 10  # Skalierung anpassen
 
-pixels_per_mm = 10  # oder passend zu deiner Skalierung
+# 📁 Datei-Upload
+uploaded_files = st.file_uploader("📥 Bilder hochladen", type=["gif", "png", "jpg", "jpeg", "tif", "tiff"], accept_multiple_files=True)
 
-# 📤 Datei-Upload
-uploaded_files = st.file_uploader("Bilder hochladen", type=["gif", "png", "jpg", "jpeg", "tif", "tiff"], accept_multiple_files=True)
+# 💡 Canvas-Abschnitt nur für erste Datei (optional erweiterbar auf alle)
+if uploaded_files:
+    uploaded_file = uploaded_files[0]
+    image_pil = Image.open(uploaded_file).convert("RGB")
+    st.image(image_pil, caption="📷 Vorschau", use_column_width=True)
 
+    st.subheader("🖌️ Manuelle Fleckenzeichnung")
+    canvas_result = st_canvas(
+        fill_color="rgba(255, 0, 0, 0.3)",
+        stroke_width=2,
+        stroke_color="#ff0000",
+        background_color="#ffffff",
+        height=300,
+        width=500,
+        drawing_mode="polygon",
+        key=f"canvas_{uploaded_file.name}"
+    )
+
+    gezeichnete_flecken = []
+    if canvas_result and canvas_result.json_data:
+        for obj in canvas_result.json_data["objects"]:
+            if obj["type"] == "polygon":
+                points = obj["path"]
+                if points and len(points) >= 3:
+                    x = [p[0] for p in points]
+                    y = [p[1] for p in points]
+                    area_px = 0.5 * abs(sum(x[i]*y[i+1] - x[i+1]*y[i] for i in range(-1, len(x)-1)))
+                    if area_px >= min_canvas_area:
+                        area_mm2 = round(area_px / (pixels_per_mm ** 2), 2)
+                        gezeichnete_flecken.append({
+                            "Datei": uploaded_file.name,
+                            "Seite": 0,
+                            "Fleckenzahl": 1,
+                            "Fläche (mm²)": area_mm2,
+                            "Quelle": "Manuell"
+                        })
+
+    if gezeichnete_flecken:
+        st.session_state["analyse_ergebnisse"].extend(gezeichnete_flecken)
+        st.session_state["total_flecken"] += len(gezeichnete_flecken)
+        st.session_state["total_pixel_area"] += sum(
+            round(fleck["Fläche (mm²)"] * (pixels_per_mm ** 2), 2) for fleck in gezeichnete_flecken
+        )
+        st.success(f"🤝 {len(gezeichnete_flecken)} manuelle Flecken hinzugefügt!")
+
+# 🔍 Automatische Analyse aller Dateien + Frames
 if uploaded_files:
     for i, uploaded_file in enumerate(uploaded_files):
-        st.header(f"🖼️ Datei: `{uploaded_file.name}`")
+        image = Image.open(uploaded_file)
+        frames = [frame.copy().convert("RGB") for frame in ImageSequence.Iterator(image)]
 
-        try:
-            image_pil = Image.open(uploaded_file)
-            frames = [frame.convert("RGB") for frame in ImageSequence.Iterator(image_pil)]
-        except Exception as e:
-            st.error(f"❌ Fehler beim Laden: {e}")
-            continue
-from streamlit_drawable_canvas import st_canvas
-from PIL import Image
+        for j, frame in enumerate(frames):
+            if len(frames) > 1:
+                st.subheader(f"📄 Seite {j + 1} von Datei: {uploaded_file.name}")
 
-# 🖼️ Vorschau & Zeichenfläche für manuelle Flecken
-image_pil = Image.open(uploaded_file).convert("RGB")
-st.image(image_pil, caption="📷 Vorschau", use_column_width=True)
+            image_np = np.array(frame)
+            hsv = cv2.cvtColor(image_np, cv2.COLOR_RGB2HSV)
+            mask = cv2.inRange(hsv, (h_min, s_min, v_min), (h_max, 255, 255))
+            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-st.subheader("🖌️ Manuelle Fleckenzeichnung")
-canvas_result = st_canvas(
-    fill_color="rgba(255, 0, 0, 0.3)",  # Transparente rote Füllung
-    stroke_width=2,
-    stroke_color="#ff0000",
-    background_color="#ffffff",         # Weißer Hintergrund (optional anpassbar)
-    height=300,
-    width=500,
-    drawing_mode="polygon",
-    key=f"canvas_{uploaded_file.name}"
-)
+            fleckenzahl = 0
+            fläche_pixel = 0
+            for cnt in contours:
+                area = cv2.contourArea(cnt)
+                if area >= min_area:
+                    fleckenzahl += 1
+                    fläche_pixel += area
 
-# 🧮 Flächenberechnung manuell gezeichneter Flecken
-min_canvas_area = st.sidebar.slider("🖍️ Mindestfläche für manuelle Flecken (px²)", 10, 1000, 50, 10)
-pixels_per_mm = 10  # An deine Skalierung anpassen
+            fläche_mm2 = fläche_pixel / (pixels_per_mm ** 2)
+            output = image_np.copy()
+            cv2.drawContours(output, contours, -1, (255, 0, 0), 2)
+            st.image(output, caption=f"🔬 Analyse Seite {j + 1}", use_column_width=True)
 
-gezeichnete_flecken = []
-if canvas_result and canvas_result.json_data:
-    for obj in canvas_result.json_data["objects"]:
-        if obj["type"] == "polygon":
-            points = obj["path"]
-            if points and len(points) >= 3:
-                x = [p[0] for p in points]
-                y = [p[1] for p in points]
-                area_px = 0.5 * abs(sum(x[i] * y[i+1] - x[i+1] * y[i] for i in range(-1, len(x)-1)))
-                if area_px >= min_canvas_area:
-                    area_mm2 = round(area_px / (pixels_per_mm ** 2), 2)
-                    gezeichnete_flecken.append({
-                        "Datei": uploaded_file.name,
-                        "Seite": 0,  # Seite 0 für manuelle Zeichnung vor Frame-Analyse
-                        "Fleckenzahl": 1,
-                        "Fläche (mm²)": area_mm2,
-                        "Quelle": "Manuell"
-                    })
-
-# ✅ In Session-State eintragen
-if gezeichnete_flecken:
-    st.session_state["analyse_ergebnisse"].extend(gezeichnete_flecken)
-    st.session_state["total_flecken"] += len(gezeichnete_flecken)
-    st.session_state["total_pixel_area"] += sum(
-        round(f["Fläche (mm²)"] * (pixels_per_mm ** 2), 2) for f in gezeichnete_flecken
-    )
-    st.success(f"🤝 {len(gezeichnete_flecken)} manuelle Flecken hinzugefügt!")
-
-    for j, frame in enumerate(frames):
-        if len(frames) > 1:
-                st.subheader(f"📄 Seite {j + 1}")
-
-        image_np = np.array(frame)
-        hsv = cv2.cvtColor(image_np, cv2.COLOR_RGB2HSV)
-        lower = np.array([h_min, s_min, v_min])
-        upper = np.array([h_max, 255, 255])
-        mask = cv2.inRange(hsv, lower, upper)
-
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        filtered = [cnt for cnt in contours if cv2.contourArea(cnt) > min_area]
-        fleckenzahl = len(filtered)
-        fläche_pixel = sum(cv2.contourArea(cnt) for cnt in filtered)
-        fläche_mm2 = fläche_pixel / (pixels_per_mm ** 2)
-
-            # 📈 Speicherung ins Session-State
             st.session_state["analyse_ergebnisse"].append({
                 "Datei": uploaded_file.name,
                 "Seite": j + 1,
                 "Fleckenzahl": fleckenzahl,
-                "Fläche (mm²)": round(fläche_mm2, 2)
+                "Fläche (mm²)": round(fläche_mm2, 2),
+                "Quelle": "Automatisch"
             })
 
-            st.success(f"🔴 Flecken: {fleckenzahl}")
-            st.info(f"📐 Fläche: {fläche_pixel:.2f} Pixel² ({fläche_mm2:.2f} mm²)")
-            output = image_np.copy()
-            cv2.drawContours(output, filtered, -1, (0, 255, 0), 2)
-            st.image(output, caption="Markierte Flecken", channels="RGB")
+            st.session_state["total_flecken"] += fleckenzahl
+            st.session_state["total_pixel_area"] += fläche_pixel
 
-        if obj["type"] == "polygon":
-            points = obj["path"]
-            if points and len(points) >= 3:
-                x = [p[0] for p in points]
-                y = [p[1] for p in points]
-                fläche = 0.5 * abs(sum(x[i] * y[i+1] - x[i+1] * y[i] for i in range(-1, len(x)-1)))
-                if fläche >= min_canvas_area:
-                    flecken_von_mensch.append({
-                        "Quelle": "Manuell",
-                        "Datei": uploaded_file.name,
-                        "Seite": 0,  # Optional anpassen
-                        "Fleckenzahl": 1,
-                        "Fläche (mm²)": round(fläche / (pixels_per_mm ** 2), 2)
-                    })
-
-    # In Session-State speichern
-    st.session_state["analyse_ergebnisse"].extend(flecken_von_mensch)
-
-    # Zur Gesamtsumme hinzufügen
-    st.session_state["total_flecken"] += len(flecken_von_mensch)
-    st.session_state["total_pixel_area"] += sum(
-        round(item["Fläche (mm²)"] * (pixels_per_mm ** 2), 2) for item in flecken_von_mensch
-    )
-
-    st.success(f"🤝 {len(flecken_von_mensch)} manuell gezeichnete Flecken übernommen!")
-
-    # 🔢 Summierung
-    st.session_state["total_flecken"] += fleckenzahl
-    st.session_state["total_pixel_area"] += fläche_pixel
-import pandas as pd
-from streamlit_drawable_canvas import st_canvas
-if uploaded_files and len(uploaded_files) > 0:
-    st.subheader("🖌️ Manuelle Fleckenzeichnung")
-
-    canvas_result = st_canvas(
-        fill_color="rgba(255, 0, 0, 0.3)",  # Rote transparente Füllung
-        stroke_width=2,
-        stroke_color="#ff0000",
-        background_image=Image.open(uploaded_files[0]),  # z. B. erstes hochgeladenes Bild
-        height=300,
-        width=500,
-        drawing_mode="polygon",  # Alternativ: "freedraw", "circle", "rect", "line"
-        key="flecken_canvas",
-    )
-    if canvas_result.json_data is not None:
-        st.info("✅ Gezeichnete Flecken-Daten empfangen")
-        st.write(canvas_result.json_data)
+# 📊 Ergebnis-Tabelle
+st.subheader("📊 Gesamt-Ergebnisse")
+if st.session_state["analyse_ergebnisse"]:
+    df = pd.DataFrame(st.session_state["analyse_ergebnisse"])
+    st.dataframe(df)
+    st.info(f"🔢 Gesamtflecken: {st.session_state['total_flecken']}, Gesamtfläche: {round(st.session_state['total_pixel_area'] / (pixels_per_mm ** 2), 2)} mm²")
 else:
-    st.warning("⚠️ Bitte lade zuerst ein Bild hoch, damit du darauf zeichnen kannst.")
-if canvas_result.json_data is not None:
-    st.info("✅ Gezeichnete Flecken-Daten empfangen")
-    st.write(canvas_result.json_data)  # Für Debugging oder Weiterverarbeitung
-
-# In Tabelle umwandeln
-df = pd.DataFrame(st.session_state["analyse_ergebnisse"])
-
-# Schöne Anzeige im Streamlit-Dashboard
-st.markdown("## 📊 Gesamttabelle aller Ergebnisse")
-st.dataframe(df.style.highlight_max(axis=0), use_container_width=True)
-
-import io
-
-excel_buffer = io.BytesIO()
-with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-    df.to_excel(writer, index=False, sheet_name='Analyse')
-
-st.download_button(
-    label="📥 Tabelle als Excel herunterladen",
-    data=excel_buffer.getvalue(),
-    file_name="flecken_gesamttabelle.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
-      
-
-# 🌟 Gesamtergebnisse anzeigen
-st.success(f"✅ Gesamte Fleckenanzahl: {st.session_state['total_flecken']}")
-st.info(f"📐 Gesamtfläche (Pixel): {st.session_state['total_pixel_area']}")
-
-# 📦 CSV-Export
-df = pd.DataFrame(st.session_state["analyse_ergebnisse"])
-csv_data = df.to_csv(index=False).encode('utf-8')
-
-st.download_button(
-    label="📄 Ergebnisse als CSV herunterladen",
-    data=csv_data,
-    file_name="flecken_analyse.csv",
-    mime="text/csv"
-)
+    st.warning("Keine Ergebnisse vorhanden – bitte Bild hochladen und analysieren!")
