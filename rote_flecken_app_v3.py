@@ -95,8 +95,8 @@ if gezeichnete_flecken:
     )
     st.success(f"🤝 {len(gezeichnete_flecken)} manuelle Flecken hinzugefügt!")
 
-        for j, frame in enumerate(frames):
-            if len(frames) > 1:
+    for j, frame in enumerate(frames):
+        if len(frames) > 1:
                 st.subheader(f"📄 Seite {j + 1}")
 
             image_np = np.array(frame)
