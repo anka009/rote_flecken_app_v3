@@ -21,17 +21,7 @@ if st.sidebar.button("🧹 Neues Experiment starten"):
     st.session_state["total_flecken"] = 0
     st.session_state["total_pixel_area"] = 0
     st.rerun()
-if st.sidebar.button("🔁 Komplettes Reset"):
-    keys_to_reset = [
-        "analyse_ergebnisse",
-        "total_flecken",
-        "total_pixel_area",
-        "upload_key"
-    ]
-    for key in keys_to_reset:
-        if key in st.session_state:
-            del st.session_state[key]
-    st.rerun()
+
 # 🔁 Komplettes Reset: löscht Session-State inkl. Upload-Zustand
 if st.sidebar.button("🔁 Komplettes Reset"):
     reset_keys = [
