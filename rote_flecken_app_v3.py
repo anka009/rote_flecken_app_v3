@@ -32,6 +32,18 @@ if st.sidebar.button("🔁 Komplettes Reset"):
         if key in st.session_state:
             del st.session_state[key]
     st.rerun()
+# 🔁 Komplettes Reset: löscht Session-State inkl. Upload-Zustand
+if st.sidebar.button("🔁 Komplettes Reset"):
+    reset_keys = [
+        "analyse_ergebnisse",
+        "total_flecken",
+        "total_pixel_area",
+        "upload_key"  # ← sorgt dafür, dass Upload-Feld leer ist!
+    ]
+    for key in reset_keys:
+        if key in st.session_state:
+            del st.session_state[key]
+    st.rerun()
 
 # 🎨 Farbempfindlichkeit via Slider
 h_min = st.sidebar.slider("Hue min", 0, 180, 0)
@@ -90,10 +102,7 @@ if uploaded_files:
             st.session_state["total_flecken"] += fleckenzahl
             st.session_state["total_pixel_area"] += fläche_pixel
 import pandas as pd
-if st.button("🗑️ Bilder entfernen (Upload zurücksetzen)"):
-    if "upload_key" in st.session_state:
-        del st.session_state["upload_key"]
-    st.rerun()
+
 
 # In Tabelle umwandeln
 df = pd.DataFrame(st.session_state["analyse_ergebnisse"])
