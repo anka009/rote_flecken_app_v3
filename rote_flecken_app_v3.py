@@ -90,6 +90,10 @@ if uploaded_files:
             st.session_state["total_flecken"] += fleckenzahl
             st.session_state["total_pixel_area"] += fläche_pixel
 import pandas as pd
+if st.button("🗑️ Bilder entfernen (Upload zurücksetzen)"):
+    if "upload_key" in st.session_state:
+        del st.session_state["upload_key"]
+    st.rerun()
 
 # In Tabelle umwandeln
 df = pd.DataFrame(st.session_state["analyse_ergebnisse"])
