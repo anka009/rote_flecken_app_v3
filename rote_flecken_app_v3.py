@@ -39,12 +39,15 @@ sidebar_controls()
 
 # 📤 Datei-Upload
 def image_upload():
+    # Sicheres Laden des Upload-Key, ohne direkte Session-State-Zuweisung
+    upload_key = st.session_state.get("upload_key", "upload_key")
     return st.file_uploader(
         "📁 Bilder hochladen",
         type=["gif", "png", "jpg", "jpeg", "tif", "tiff"],
         accept_multiple_files=True,
-        key=st.session_state["upload_key"]
+        key=upload_key
     )
+
 
 # 🔬 Analyse-Funktion
 def analyse_image(file, page_number, frame_rgb, settings):
