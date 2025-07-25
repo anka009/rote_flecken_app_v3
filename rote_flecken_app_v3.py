@@ -21,6 +21,17 @@ if st.sidebar.button("🧹 Neues Experiment starten"):
     st.session_state["total_flecken"] = 0
     st.session_state["total_pixel_area"] = 0
     st.rerun()
+if st.sidebar.button("🔁 Komplettes Reset"):
+    keys_to_reset = [
+        "analyse_ergebnisse",
+        "total_flecken",
+        "total_pixel_area",
+        "upload_key"
+    ]
+    for key in keys_to_reset:
+        if key in st.session_state:
+            del st.session_state[key]
+    st.rerun()
 
 # 🎨 Farbempfindlichkeit via Slider
 h_min = st.sidebar.slider("Hue min", 0, 180, 0)
@@ -32,7 +43,7 @@ min_area = st.sidebar.slider("🟢 Minimale Fleckfläche (Pixel)", min_value=10,
 pixels_per_mm = 10  # oder passend zu deiner Skalierung
 
 # 📤 Datei-Upload
-uploaded_files = st.file_uploader("Bilder hochladen", type=["gif", "png", "jpg", "jpeg", "tif", "tiff"], accept_multiple_files=True)
+uploaded_files = st.file_uploader("Bilder hochladen", type=["gif", "png", "jpg", "jpeg", "tif", "tiff"], accept_multiple_files=True, key="upload_key")
 
 if uploaded_files:
     for i, uploaded_file in enumerate(uploaded_files):
