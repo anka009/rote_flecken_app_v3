@@ -21,13 +21,27 @@ if st.sidebar.button("🔁 Alles zurücksetzen"):
         st.session_state.pop(key)
     st.session_state["upload_key"] = f"upload_key_{random.randint(0, 100_000)}"
     st.rerun()
+# 🌈 Farbgruppen mit Defaultwerten
+farbgruppen = {
+    "Rot": {"h_min": 0, "h_max": 10, "s_min": 100, "v_min": 50, "rgb": (255, 0, 0)},
+    "Gelb": {"h_min": 20, "h_max": 40, "s_min": 100, "v_min": 50, "rgb": (255, 255, 0)},
+    "Grün": {"h_min": 45, "h_max": 75, "s_min": 100, "v_min": 50, "rgb": (0, 255, 0)},
+    "Blau": {"h_min": 90, "h_max": 130, "s_min": 100, "v_min": 50, "rgb": (0, 0, 255)},
+    "Braun": {"h_min": 10, "h_max": 20, "s_min": 50, "v_min": 20, "rgb": (150, 75, 0)},
+}
 
-# 🎨 Farbparameter
-st.sidebar.markdown("## 🎨 Flecken-Farbparameter")
-h_min = st.sidebar.slider("Hue min", 0, 180, 0)
-h_max = st.sidebar.slider("Hue max", 0, 180, 30)
-s_min = st.sidebar.slider("Sättigung min", 0, 255, 70)
-v_min = st.sidebar.slider("Helligkeit min", 0, 255, 50)
+st.sidebar.markdown("## 🎨 Farbgruppe wählen")
+farbwahl = st.sidebar.selectbox("Farbgruppe", list(farbgruppen.keys()))
+fw = farbgruppen[farbwahl]
+
+# 🎛️ Dynamische Slider je Farbgruppe
+h_min = st.sidebar.slider("Hue min", 0, 180, fw["h_min"])
+h_max = st.sidebar.slider("Hue max", 0, 180, fw["h_max"])
+s_min = st.sidebar.slider("Sättigung min", 0, 255, fw["s_min"])
+v_min = st.sidebar.slider("Helligkeit min", 0, 255, fw["v_min"])
+farbe_rgb = fw["rgb"]
+
+
 min_area = st.sidebar.slider("🟩 Minimale Fleckfläche", 10, 5000, 50, 10)
 max_area = st.sidebar.slider("🟥 Maximale Fleckfläche", 100, 10000, 2000, 50)
 pixels_per_mm = 10
@@ -104,7 +118,11 @@ if uploaded_files:
                 # 🟩 Gruppen farbig ausfüllen + Label
                 for idx, group in enumerate(clustered.values()):
                     contour = cv2.convexHull(np.vstack(group))
-                    cv2.drawContours(overlay, [contour], -1, (0, 255, 0), -1)  # grün füllen
+                    
+                    cv2.drawContours(overlay, [contour], -1, farbe_rgb, -1)
+                    cv2.drawContours(output_clustered, [contour], -1, farbe_rgb, 4)
+                    cv2.putText(overlay, f"{farbwahl} – Gruppe {idx+1}", (cx, cy),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, farbe_rgb, 2)
 
                     M = cv2.moments(contour)
                     if M["m00"] != 0:
