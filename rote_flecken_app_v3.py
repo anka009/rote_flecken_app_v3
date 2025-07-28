@@ -30,6 +30,8 @@ h_max = st.sidebar.slider("Hue max", 0, 180, 30)
 s_min = st.sidebar.slider("Sättigung min", 0, 255, 70)
 v_min = st.sidebar.slider("Helligkeit min", 0, 255, 50)
 min_area = st.sidebar.slider("🟩 Minimale Fleckfläche (Pixel)", 10, 1000, 50, 10)
+max_area = st.sidebar.slider("🟥 Maximale Fleckfläche (Pixel)", 100, 5000, 2000, 50)
+
 pixels_per_mm = 10  # Anpassbar je nach Skalierung
 
 # ⚡ Kontrast-Einstellungen
@@ -80,7 +82,8 @@ if uploaded_files:
             upper = np.array([h_max, 255, 255])
             mask = cv2.inRange(hsv, lower, upper)
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            filtered = [cnt for cnt in contours if cv2.contourArea(cnt) > min_area]
+
+            filtered = [cnt for cnt in contours if min_area < cv2.contourArea(cnt) < max_area]
 
             fleckenzahl = len(filtered)
             fläche_pixel = sum(cv2.contourArea(cnt) for cnt in filtered)
