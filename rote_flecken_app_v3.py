@@ -122,10 +122,10 @@ for idx, (label, group) in enumerate(clustered.items()):
 
 st.image(grouped_image, caption="🖼️ Gruppierte Flecken farblich eingerahmt", channels="RGB")
 
-                output_clustered = image_np.copy()
-                cv2.drawContours(output_clustered, merged_contours, -1, (0, 255, 255), 2)
-                st.image(output_clustered, caption="🟡 Gruppierte Flecken", channels="RGB")
-                st.success(f"🧬 Gruppen: {len(merged_contours)}")
+            output_clustered = image_np.copy()
+            cv2.drawContours(output_clustered, merged_contours, -1, (0, 255, 255), 2)
+            st.image(output_clustered, caption="🟡 Gruppierte Flecken", channels="RGB")
+            st.success(f"🧬 Gruppen: {len(merged_contours)}")
             else:
                 st.warning("⚠️ Keine Zentren zum Clustern gefunden.")
 
