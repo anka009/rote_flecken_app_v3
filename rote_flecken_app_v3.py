@@ -95,6 +95,33 @@ if uploaded_files:
                 for label, cnt in zip(labels, filtered):
                     clustered.setdefault(label, []).append(cnt)
                 merged_contours = [cv2.convexHull(np.vstack(group)) for group in clustered.values()]
+                # 🔳 Gruppenkonturen mit Farbumrandung zeichnen
+colors = [
+    (255, 0, 0),     # Rot
+    (0, 255, 0),     # Grün
+    (0, 0, 255),     # Blau
+    (255, 255, 0),   # Gelb
+    (255, 0, 255),   # Magenta
+    (0, 255, 255),   # Cyan
+]
+
+grouped_image = image_np.copy()
+
+for idx, (label, group) in enumerate(clustered.items()):
+    color = colors[idx % len(colors)]
+    contour = cv2.convexHull(np.vstack(group))
+    cv2.drawContours(grouped_image, [contour], -1, color, 3)
+
+    # 🏷️ Gruppe beschriften (optional)
+    M = cv2.moments(contour)
+    if M["m00"] != 0:
+        cx = int(M["m10"] / M["m00"])
+        cy = int(M["m01"] / M["m00"])
+        cv2.putText(grouped_image, f"Gruppe {idx+1}", (cx, cy),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+
+st.image(grouped_image, caption="🖼️ Gruppierte Flecken farblich eingerahmt", channels="RGB")
+
                 output_clustered = image_np.copy()
                 cv2.drawContours(output_clustered, merged_contours, -1, (0, 255, 255), 2)
                 st.image(output_clustered, caption="🟡 Gruppierte Flecken", channels="RGB")
