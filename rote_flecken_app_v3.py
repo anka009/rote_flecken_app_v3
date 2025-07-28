@@ -40,7 +40,7 @@ brightness = st.sidebar.slider("Helligkeit", 0.5, 2.0, 1.0, 0.1)
 
 # 🔗 Gruppierung
 st.sidebar.markdown("## 🧬 Gruppierungsparameter")
-merge_radius = st.sidebar.slider("🔗 Gruppierungs-Radius", 0, 1000, 200, 10)
+merge_radius = st.sidebar.slider("🔗 Gruppierungs-Radius", 10, 1000, 200, 10)
 
 # 📁 Datei-Upload
 uploaded_files = st.file_uploader("📁 Bild-Upload", type=["gif", "png", "jpg", "jpeg", "tif", "tiff"],
