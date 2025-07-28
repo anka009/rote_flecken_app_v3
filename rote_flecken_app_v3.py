@@ -126,26 +126,26 @@ output_clustered = image_np.copy()
 cv2.drawContours(output_clustered, merged_contours, -1, (0, 255, 255), 2)
 st.image(output_clustered, caption="🟡 Gruppierte Flecken", channels="RGB")
 st.success(f"🧬 Gruppen: {len(merged_contours)}")
-else:
-    st.warning("⚠️ Keine Zentren zum Clustern gefunden.")
+    else:
+        st.warning("⚠️ Keine Zentren zum Clustern gefunden.")
 
-output_marked = image_np.copy()
-cv2.drawContours(output_marked, filtered, -1, (0, 255, 0), 2)
-st.image(output_marked, caption="🟩 Markierte Flecken", channels="RGB")
+    output_marked = image_np.copy()
+    cv2.drawContours(output_marked, filtered, -1, (0, 255, 0), 2)
+    st.image(output_marked, caption="🟩 Markierte Flecken", channels="RGB")
 
-fleckenzahl = len(filtered)
-fläche_pixel = sum(cv2.contourArea(cnt) for cnt in filtered)
-fläche_mm2 = fläche_pixel / (pixels_per_mm ** 2)
+    fleckenzahl = len(filtered)
+    fläche_pixel = sum(cv2.contourArea(cnt) for cnt in filtered)
+    fläche_mm2 = fläche_pixel / (pixels_per_mm ** 2)
 
-st.success(f"🔴 Flecken: {fleckenzahl}")
-st.info(f"📏 Fläche: {fläche_pixel:.2f} px² ({fläche_mm2:.2f} mm²)")
+    st.success(f"🔴 Flecken: {fleckenzahl}")
+    st.info(f"📏 Fläche: {fläche_pixel:.2f} px² ({fläche_mm2:.2f} mm²)")
 
-st.session_state["analyse_ergebnisse"].append({
-    "Datei": uploaded_file.name,
-    "Seite": j + 1,
-    "Fleckenzahl": fleckenzahl,
-    "Fläche (mm²)": round(fläche_mm2, 2)
-})
+    st.session_state["analyse_ergebnisse"].append({
+        "Datei": uploaded_file.name,
+        "Seite": j + 1,
+        "Fleckenzahl": fleckenzahl,
+        "Fläche (mm²)": round(fläche_mm2, 2)
+    })
 st.session_state["total_flecken"] += fleckenzahl
 st.session_state["total_pixel_area"] += fläche_pixel
 
