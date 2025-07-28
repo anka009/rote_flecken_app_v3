@@ -96,6 +96,29 @@ if uploaded_files:
                     clustered.setdefault(label, []).append(cnt)
                 merged_contours = [cv2.convexHull(np.vstack(group)) for group in clustered.values()]
                 output_clustered = image_np.copy()
+                overlay = image_np.copy()
+                green = (0, 255, 0)  # Einheitliches Grün
+
+                for idx, group in enumerate(clustered.values()):
+                    contour = cv2.convexHull(np.vstack(group))
+
+                    # Fläche grün füllen
+                    cv2.drawContours(overlay, [contour], -1, green, -1)
+
+                    # Gruppennummer in Schwarz in die Mitte schreiben
+                    M = cv2.moments(contour)
+                    if M["m00"] != 0:
+                        cx = int(M["m10"] / M["m00"])
+                        cy = int(M["m01"] / M["m00"])
+                        cv2.putText(overlay, f"Gruppe {idx+1}", (cx, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 2)
+
+                # Transparente Überlagerung erstellen
+                alpha = 0.4
+                filled_output = cv2.addWeighted(overlay, alpha, image_np, 1 - alpha, 0)
+
+                # Bild ausgeben
+                st.image(filled_output, caption="🟢 Alle Gruppen grün gefüllt", channels="RGB")
+
                 cv2.drawContours(output_clustered, merged_contours, -1, (0, 255, 255), 2)
                 st.image(output_clustered, caption="🟡 Gruppierte Flecken", channels="RGB")
                 st.success(f"🧬 Gruppen: {len(merged_contours)}")
