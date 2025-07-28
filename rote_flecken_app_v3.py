@@ -104,18 +104,18 @@ if uploaded_files:
             # ...
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             
-filtered = [cnt for cnt in contours if min_area < cv2.contourArea(cnt) < max_area]
-if filtered:
-    centers = []
-    for cnt in filtered:
-        M = cv2.moments(cnt)
-        if M["m00"] != 0:
-            cx = int(M["m10"] / M["m00"])
-            cy = int(M["m01"] / M["m00"])
-            centers.append([cx, cy])
-    # Hier weiter mit Clustering etc...
-else:
-    st.warning("⚠️ Keine Konturen zum Verarbeiten gefunden.")
+            filtered = [cnt for cnt in contours if min_area < cv2.contourArea(cnt) < max_area]
+            if filtered:
+                centers = []
+                for cnt in filtered:
+                    M = cv2.moments(cnt)
+                    if M["m00"] != 0:
+                        cx = int(M["m10"] / M["m00"])
+                        cy = int(M["m01"] / M["m00"])
+                        centers.append([cx, cy])
+                # Hier weiter mit Clustering etc...
+            else:
+                st.warning("⚠️ Keine Konturen zum Verarbeiten gefunden.")
 
 
 for cnt in filtered:
