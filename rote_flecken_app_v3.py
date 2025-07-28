@@ -125,6 +125,12 @@ for cnt in filtered:
         cy = int(M["m01"] / M["m00"])
         centers.append([cx, cy])
 from sklearn.cluster import DBSCAN
+centers = []
+if centers:
+    db = DBSCAN(eps=merge_radius, min_samples=1).fit(centers)
+    # weitere Verarbeitung...
+else:
+    st.warning("⚠️ Keine Zentren gefunden – Clustering wird übersprungen.")
 
 db = DBSCAN(eps=merge_radius, min_samples=1).fit(centers)
 labels = db.labels_
