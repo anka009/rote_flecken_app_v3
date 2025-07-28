@@ -5,3 +5,4 @@ pillow
 XlsxWriter
 streamlit
 streamlit-drawable-canvas
+scikit-learn
