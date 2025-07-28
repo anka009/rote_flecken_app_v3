@@ -89,9 +89,14 @@ if uploaded_files:
             centers = []
 if "filtered" in locals():
     for cnt in filtered:
-        # Mach was
+        # ⬅️ Hier muss etwas passieren, z. B.:
+        st.write("Kontur verarbeitet")  # Beispiel
 else:
     st.warning("⚠️ Keine Konturen zum Verarbeiten gefunden.")
+
+for cnt in filtered:
+    print(cv2.contourArea(cnt))  # Zeigt die Fläche jeder Kontur
+
 
 for cnt in filtered:
     M = cv2.moments(cnt)
