@@ -87,12 +87,33 @@ if uploaded_files:
 
             filtered = [cnt for cnt in contours if min_area < cv2.contourArea(cnt) < max_area]
             centers = []
-if "filtered" in locals():
-    for cnt in filtered:
-        # ⬅️ Hier muss etwas passieren, z. B.:
-        st.write("Kontur verarbeitet")  # Beispiel
-else:
-    st.warning("⚠️ Keine Konturen zum Verarbeiten gefunden.")
+filtered = []  # Initialisiere außerhalb, damit sie immer existiert
+
+if uploaded_files:
+    for i, uploaded_file in enumerate(uploaded_files):
+        st.header(f"🖼️ Datei: `{uploaded_file.name}`")
+        try:
+            image_pil = Image.open(uploaded_file)
+            frames = [frame.convert("RGB") for frame in ImageSequence.Iterator(image_pil)]
+        except Exception as e:
+            st.error(f"❌ Fehler beim Laden: {e}")
+            continue
+
+        for j, frame in enumerate(frames):
+            # 🧪 Bildverarbeitung wie bisher
+            # ...
+            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            filtered = [cnt for cnt in contours if min_area < cv2.contourArea(cnt) < max_area]
+
+            if filtered:
+                for cnt in filtered:
+                    M = cv2.moments(cnt)
+                    if M["m00"] != 0:
+                        cx = int(M["m10"] / M["m00"])
+                        cy = int(M["m01"] / M["m00"])
+                        # centers.append([cx, cy]) etc...
+            else:
+                st.warning("⚠️ Keine Konturen zum Verarbeiten gefunden.")
 
 for cnt in filtered:
     print(cv2.contourArea(cnt))  # Zeigt die Fläche jeder Kontur
