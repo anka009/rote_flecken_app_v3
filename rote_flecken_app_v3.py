@@ -7,7 +7,7 @@ import io
 import random
 from sklearn.cluster import DBSCAN
 
-# 🧠 Session-State Initialisierung
+# 🧠 Session Initialisierung
 for key in ["analyse_ergebnisse", "total_flecken", "total_pixel_area"]:
     if key not in st.session_state:
         st.session_state[key] = 0 if "total" in key else []
@@ -40,16 +40,17 @@ brightness = st.sidebar.slider("Helligkeit", 0.5, 2.0, 1.0, 0.1)
 
 # 🔗 Gruppierung
 st.sidebar.markdown("## 🧬 Gruppierungsparameter")
-merge_radius = st.sidebar.slider("🔗 Gruppierungs-Radius", 0, 1000, 200, 10)
+merge_radius = st.sidebar.slider("🔗 Gruppierungs-Radius", 10, 1000, 200, 10)
 
-# 📁 Datei-Upload
-uploaded_files = st.file_uploader("📁 Bild-Upload", type=["gif", "png", "jpg", "jpeg", "tif", "tiff"],
+# 📥 Upload
+uploaded_files = st.file_uploader("📥 Bild-Upload", type=["gif", "png", "jpg", "jpeg", "tif", "tiff"],
                                    accept_multiple_files=True, key=st.session_state["upload_key"])
 
 # 🧪 Analyse
 if uploaded_files:
     for i, uploaded_file in enumerate(uploaded_files):
         st.header(f"🖼️ Datei: `{uploaded_file.name}`")
+
         try:
             image_pil = Image.open(uploaded_file)
             frames = [frame.convert("RGB") for frame in ImageSequence.Iterator(image_pil)]
@@ -76,6 +77,7 @@ if uploaded_files:
             lower = np.array([h_min, s_min, v_min])
             upper = np.array([h_max, 255, 255])
             mask = cv2.inRange(hsv, lower, upper)
+
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             filtered = [cnt for cnt in contours if min_area < cv2.contourArea(cnt) < max_area]
 
@@ -91,25 +93,42 @@ if uploaded_files:
                 centers_np = np.array(centers)
                 db = DBSCAN(eps=merge_radius, min_samples=1).fit(centers_np)
                 labels = db.labels_
+
                 clustered = {}
                 for label, cnt in zip(labels, filtered):
                     clustered.setdefault(label, []).append(cnt)
+
                 merged_contours = [cv2.convexHull(np.vstack(group)) for group in clustered.values()]
+                overlay = image_np.copy()
+
+                # 🟩 Gruppen farbig ausfüllen + Label
+                for idx, group in enumerate(clustered.values()):
+                    contour = cv2.convexHull(np.vstack(group))
+                    cv2.drawContours(overlay, [contour], -1, (0, 255, 0), -1)  # grün füllen
+
+                    M = cv2.moments(contour)
+                    if M["m00"] != 0:
+                        cx = int(M["m10"] / M["m00"])
+                        cy = int(M["m01"] / M["m00"])
+                        cv2.putText(overlay, f"Gruppe {idx + 1}", (cx, cy),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 2)
+
+                filled_output = cv2.addWeighted(overlay, 0.4, image_np, 0.6, 0)
+                st.image(filled_output, caption="🟢 Gefüllte Gruppen mit Label", channels="RGB")
+
+                # 🟠 Gruppen fett umrandet
                 output_clustered = image_np.copy()
-                cv2.drawContours(output_clustered, merged_contours, -1, (0, 255, 255), 2)
-                st.image(output_clustered, caption="🟡 Gruppierte Flecken", channels="RGB")
+                cv2.drawContours(output_clustered, merged_contours, -1, (0, 255, 255), 4)  # ➡️ dicke Umrandung!
+                st.image(output_clustered, caption="🟠 Gruppierte Flecken fett umrandet", channels="RGB")
+
                 st.success(f"🧬 Gruppen: {len(merged_contours)}")
             else:
                 st.warning("⚠️ Keine Zentren zum Clustern gefunden.")
 
-            output_marked = image_np.copy()
-            cv2.drawContours(output_marked, filtered, -1, (0, 255, 0), 2)
-            st.image(output_marked, caption="🟩 Markierte Flecken", channels="RGB")
-
+            # 🧮 Zahlen
             fleckenzahl = len(filtered)
             fläche_pixel = sum(cv2.contourArea(cnt) for cnt in filtered)
             fläche_mm2 = fläche_pixel / (pixels_per_mm ** 2)
-
             st.success(f"🔴 Flecken: {fleckenzahl}")
             st.info(f"📏 Fläche: {fläche_pixel:.2f} px² ({fläche_mm2:.2f} mm²)")
 
@@ -119,24 +138,30 @@ if uploaded_files:
                 "Fleckenzahl": fleckenzahl,
                 "Fläche (mm²)": round(fläche_mm2, 2)
             })
+
             st.session_state["total_flecken"] += fleckenzahl
             st.session_state["total_pixel_area"] += fläche_pixel
 
-    # 📊 Tabelle & Download
+    # 📊 Gesamttabelle + Download
     df = pd.DataFrame(st.session_state["analyse_ergebnisse"])
     st.markdown("## 📊 Gesamttabelle")
     st.dataframe(df.style.highlight_max(axis=0), use_container_width=True)
 
+    # 🔽 Export
     excel_buffer = io.BytesIO()
     with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
         df.to_excel(writer, index=False, sheet_name="Analyse")
-    st.download_button("📥 Excel herunterladen", data=excel_buffer.getvalue(),
+
+    st.download_button("📥 Excel herunterladen",
+                       data=excel_buffer.getvalue(),
                        file_name="flecken_gesamttabelle.xlsx",
                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
     csv_data = df.to_csv(index=False).encode("utf-8")
-    st.download_button("📄 CSV herunterladen", data=csv_data,
-                       file_name="flecken_analyse.csv", mime="text/csv")
+    st.download_button("📄 CSV herunterladen",
+                       data=csv_data,
+                       file_name="flecken_analyse.csv",
+                       mime="text/csv")
 
     st.success(f"✅ Gesamtanzahl Flecken: {st.session_state['total_flecken']}")
     st.info(f"📐 Gesamtfläche (px): {st.session_state['total_pixel_area']}")
