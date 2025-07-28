@@ -39,6 +39,8 @@ st.sidebar.markdown("## ⚡ Kontrastverstärkung")
 enable_clahe = st.sidebar.checkbox("Automatischer CLAHE-Boost", value=True)
 contrast = st.sidebar.slider("Manueller Kontrast", 0.5, 2.5, 1.0, 0.1)
 brightness = st.sidebar.slider("Manuelle Helligkeit", 0.5, 2.0, 1.0, 0.1)
+st.sidebar.markdown("## 🧭 Gruppierungsparameter")
+merge_radius = st.sidebar.slider("🔗 Gruppierungs-Radius (Pixel)", 0, 1000, 200, 10)
 
 # 📁 Datei-Upload
 uploaded_files = st.file_uploader(
@@ -84,6 +86,27 @@ if uploaded_files:
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
             filtered = [cnt for cnt in contours if min_area < cv2.contourArea(cnt) < max_area]
+            centers = []
+for cnt in filtered:
+    M = cv2.moments(cnt)
+    if M["m00"] != 0:
+        cx = int(M["m10"] / M["m00"])
+        cy = int(M["m01"] / M["m00"])
+        centers.append([cx, cy])
+from sklearn.cluster import DBSCAN
+
+db = DBSCAN(eps=merge_radius, min_samples=1).fit(centers)
+labels = db.labels_
+clustered = {}
+for label, cnt in zip(labels, filtered):
+    clustered.setdefault(label, []).append(cnt)
+
+merged_contours = [cv2.convexHull(np.vstack(group)) for group in clustered.values()]
+output = image_np.copy()
+cv2.drawContours(output, merged_contours, -1, (0, 255, 255), 2)
+
+st.image(output, caption="🟠 Gruppierte Flecken", channels="RGB")
+st.success(f"🧮 Gruppierte Fleckenanzahl: {len(merged_contours)}")
 
             fleckenzahl = len(filtered)
             fläche_pixel = sum(cv2.contourArea(cnt) for cnt in filtered)
