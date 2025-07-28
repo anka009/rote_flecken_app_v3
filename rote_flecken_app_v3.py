@@ -87,6 +87,12 @@ if uploaded_files:
 
             filtered = [cnt for cnt in contours if min_area < cv2.contourArea(cnt) < max_area]
             centers = []
+if "filtered" in locals():
+    for cnt in filtered:
+        # Mach was
+else:
+    st.warning("⚠️ Keine Konturen zum Verarbeiten gefunden.")
+
 for cnt in filtered:
     M = cv2.moments(cnt)
     if M["m00"] != 0:
