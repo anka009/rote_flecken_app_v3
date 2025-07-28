@@ -108,26 +108,26 @@ cv2.drawContours(output, merged_contours, -1, (0, 255, 255), 2)
 st.image(output, caption="🟠 Gruppierte Flecken", channels="RGB")
 st.success(f"🧮 Gruppierte Fleckenanzahl: {len(merged_contours)}")
 
-            fleckenzahl = len(filtered)
-            fläche_pixel = sum(cv2.contourArea(cnt) for cnt in filtered)
-            fläche_mm2 = fläche_pixel / (pixels_per_mm ** 2)
+fleckenzahl = len(filtered)
+fläche_pixel = sum(cv2.contourArea(cnt) for cnt in filtered)
+fläche_mm2 = fläche_pixel / (pixels_per_mm ** 2)
 
-            st.session_state["analyse_ergebnisse"].append({
-                "Datei": uploaded_file.name,
-                "Seite": j + 1,
-                "Fleckenzahl": fleckenzahl,
-                "Fläche (mm²)": round(fläche_mm2, 2)
-            })
+st.session_state["analyse_ergebnisse"].append({
+    "Datei": uploaded_file.name,
+    "Seite": j + 1,
+    "Fleckenzahl": fleckenzahl,
+    "Fläche (mm²)": round(fläche_mm2, 2)
+})
 
-            st.success(f"🔴 Flecken: {fleckenzahl}")
-            st.info(f"📐 Fläche: {fläche_pixel:.2f} Pixel² ({fläche_mm2:.2f} mm²)")
+st.success(f"🔴 Flecken: {fleckenzahl}")
+st.info(f"📐 Fläche: {fläche_pixel:.2f} Pixel² ({fläche_mm2:.2f} mm²)")
 
-            output = image_np.copy()
-            cv2.drawContours(output, filtered, -1, (0, 255, 0), 2)
-            st.image(output, caption="Markierte Flecken", channels="RGB")
+output = image_np.copy()
+cv2.drawContours(output, filtered, -1, (0, 255, 0), 2)
+st.image(output, caption="Markierte Flecken", channels="RGB")
 
-            st.session_state["total_flecken"] += fleckenzahl
-            st.session_state["total_pixel_area"] += fläche_pixel
+st.session_state["total_flecken"] += fleckenzahl
+st.session_state["total_pixel_area"] += fläche_pixel
 
 # 📊 Gesamttabelle
 df = pd.DataFrame(st.session_state["analyse_ergebnisse"])
