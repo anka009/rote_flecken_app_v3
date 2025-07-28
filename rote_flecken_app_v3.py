@@ -117,6 +117,7 @@ if uploaded_files:
 
                 # 🟩 Gruppen farbig ausfüllen + Label
                 for idx, group in enumerate(clustered.values()):
+                    output_clustered = image_np.copy()
                     contour = cv2.convexHull(np.vstack(group))
                     
                     cv2.drawContours(overlay, [contour], -1, farbe_rgb, -1)
@@ -135,7 +136,7 @@ if uploaded_files:
                 st.image(filled_output, caption="🟢 Gefüllte Gruppen mit Label", channels="RGB")
 
                 # 🟠 Gruppen fett umrandet
-                output_clustered = image_np.copy()
+                
                 cv2.drawContours(output_clustered, merged_contours, -1, (0, 255, 255), 4)  # ➡️ dicke Umrandung!
                 st.image(output_clustered, caption="🟠 Gruppierte Flecken fett umrandet", channels="RGB")
 
