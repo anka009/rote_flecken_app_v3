@@ -166,7 +166,8 @@ if uploaded_files:
     st.markdown("## 📊 Gesamttabelle")
     st.dataframe(df.style.highlight_max(axis=0), use_container_width=True)
     from io import BytesIO
-
+    # Konvertiere das Array in ein PIL-Bild
+    overlay_pil = Image.fromarray(filled_output)
     # Bild in Bytes umwandeln
     img_buffer = BytesIO()
     Image.fromarray(filled_output).save(img_buffer, format="PNG")
