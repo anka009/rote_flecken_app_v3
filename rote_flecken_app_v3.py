@@ -169,7 +169,7 @@ if uploaded_files:
 
     # Bild in Bytes umwandeln
     img_buffer = BytesIO()
-    draw_img.save(img_buffer, format="PNG")
+    Image.fromarray(filled_output).save(img_buffer, format="PNG")
     img_bytes = img_buffer.getvalue()
 
     # Download-Button anzeigen
