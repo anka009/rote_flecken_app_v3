@@ -165,6 +165,20 @@ if uploaded_files:
     df = pd.DataFrame(st.session_state["analyse_ergebnisse"])
     st.markdown("## 📊 Gesamttabelle")
     st.dataframe(df.style.highlight_max(axis=0), use_container_width=True)
+    from io import BytesIO
+
+    # Bild in Bytes umwandeln
+    img_buffer = BytesIO()
+    draw_img.save(img_buffer, format="PNG")
+    img_bytes = img_buffer.getvalue()
+
+    # Download-Button anzeigen
+    st.download_button(
+        label="📥 Markiertes Bild herunterladen",
+        data=img_bytes,
+        file_name="fleckengruppen_ergebnis.png",
+        mime="image/png"
+    )
 
     # 🔽 Export
     excel_buffer = io.BytesIO()
